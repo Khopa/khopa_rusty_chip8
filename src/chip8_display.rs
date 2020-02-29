@@ -1,14 +1,14 @@
 
-const DISPLAY_WIDTH: usize = 64;
-const DISPLAY_HEIGHT: usize = 64;
+pub const DISPLAY_WIDTH: usize = 64;
+pub const DISPLAY_HEIGHT: usize = 32;
 
 pub struct Chip8Display{
-    display_data: [[u8; DISPLAY_WIDTH];DISPLAY_HEIGHT],
+    pub(crate) display_data: [[u8; DISPLAY_WIDTH/8];DISPLAY_HEIGHT],
 }
 
 pub fn build_chip8_display() -> Chip8Display {
     return Chip8Display{
-        display_data: [[0; DISPLAY_WIDTH];DISPLAY_HEIGHT]
+        display_data: [[0; DISPLAY_WIDTH/8];DISPLAY_HEIGHT]
     };
 }
 
