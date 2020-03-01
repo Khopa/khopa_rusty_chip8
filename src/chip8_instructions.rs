@@ -197,7 +197,7 @@ Return from a subroutine.
 The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
 */
 fn ret(device: &mut Chip8, ins: u16) {
-    let nnn = ins & 0x0FFF;
+    let nnn:u16 = ins & 0x0FFF;
     device.pc = device.stack[device.sp as usize];
     device.sp = device.sp - 1;
 }
@@ -209,7 +209,7 @@ Jump to location nnn.
 The interpreter sets the program counter to nnn.
 */
 fn jp(device: &mut Chip8, ins: u16) {
-    let nnn = ins & 0x0FFF;
+    let nnn:u16 = ins & 0x0FFF;
     println!("{:#4x?}", nnn);
     device.pc = nnn;
 }
@@ -221,7 +221,7 @@ Call subroutine at nnn.
 The interpreter increments the stack pointer, then puts the current PC on the top of the stack. The PC is then set to nnn.
 */
 fn call(device: &mut Chip8, ins: u16) {
-    let nnn = ins & 0x0FFF;
+    let nnn:u16 = ins & 0x0FFF;
     device.sp = device.sp + 1;
     device.stack[device.sp as usize] = device.pc;
     device.pc = nnn;
@@ -235,7 +235,7 @@ The interpreter compares register Vx to kk, and if they are equal, increments th
 */
 fn se(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
-    let byte = (ins & 0x00FF) as u8;
+    let byte:u8 = (ins & 0x00FF) as u8;
     if device.vn[register] == byte {
         device.pc += 2;
     }
@@ -249,7 +249,7 @@ The interpreter compares register Vx to kk, and if they are not equal, increment
 */
 fn sne(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
-    let byte = (ins & 0x00FF) as u8;
+    let byte:u8 = (ins & 0x00FF) as u8;
     if device.vn[register] != byte {
         device.pc += 2;
     }
@@ -263,7 +263,7 @@ The interpreter compares register Vx to register Vy, and if they are equal, incr
 */
 fn sevxvy(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y = (ins & 0x00F0 >> 4) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
     if device.vn[x] == device.vn[y] {
         device.pc += 2;
     }
@@ -277,7 +277,7 @@ The interpreter puts the value kk into register Vx.
 */
 fn ldvxb(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
-    let byte = (ins & 0x00FF) as u8;
+    let byte:u8  = (ins & 0x00FF) as u8;
     device.vn[register] = byte;
 }
 
@@ -289,7 +289,7 @@ Adds the value kk to the value of register Vx, then stores the result in Vx.
 */
 fn addvxb(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
-    let byte = (ins & 0x00FF) as u8;
+    let byte:u8 = (ins & 0x00FF) as u8;
     device.vn[register] = device.vn[register] + byte;
 }
 
@@ -302,7 +302,7 @@ Stores the value of register Vy in register Vx.
 */
 fn ldvxvy(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y = (ins & 0x00F0 >> 4) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
     device.vn[x] = device.vn[y];
 }
 
@@ -315,7 +315,7 @@ Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
 */
 fn or(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y = (ins & 0x00F0 >> 4) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
     device.vn[x] = device.vn[x] | device.vn[y];
 }
 
@@ -329,7 +329,7 @@ Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
 */
 fn and(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y = (ins & 0x00F0 >> 4) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
     device.vn[x] = device.vn[x] & device.vn[y];
 }
 
@@ -342,7 +342,7 @@ Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the resu
 */
 fn xor(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y = (ins & 0x00F0 >> 4) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
     device.vn[x] = device.vn[x] ^ device.vn[y];
 }
 
@@ -355,7 +355,7 @@ VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and 
 */
 fn addvxvy(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y = (ins & 0x00F0 >> 4) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
     let result:u16 = (device.vn[x] as u16) + (device.vn[y] as u16);
     if result > 0xFF { device.vf = 1; } else { device.vf = 0; };
     device.vn[x] = (result & 0x00FF) as u8;
