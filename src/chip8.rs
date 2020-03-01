@@ -17,6 +17,9 @@ pub struct Chip8{
     // General Purpose Registers
     pub(crate) v_registers: [u8; REGISTER_COUNT],
 
+    // Flag/Carry register
+    pub(crate) vf: u8,
+
     // Delay Registers
     pub(crate) d_register: u8,
 
@@ -41,6 +44,7 @@ pub fn build_chip8() -> Chip8{
     return Chip8{
         memory: [0; chip8_memory::END_MEM],
         v_registers: [0; REGISTER_COUNT],
+        vf: 0,
         d_register: 0,
         s_register: 0,
         display: chip8_display::build_chip8_display(),
