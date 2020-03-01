@@ -124,13 +124,13 @@ pub fn get_instruction_type(ins: u16) -> CH8_INSTRUCTION {
 
 pub fn exec(ins: u16, device: &mut Chip8){
     let itype = get_instruction_type(ins);
-    println!("{:#016b} {:#04x?} | {:.16?}", ins, ins, itype);
+    println!("{:#04x?} | {:#016b} {:#04x?} | {:.16?}", device.pc, ins, ins, itype);
     match itype {
         CH8_INSTRUCTION::SYS => { sys(device, ins); },
         CH8_INSTRUCTION::CLS => { cls(device, ins); },
-        CH8_INSTRUCTION::RET => {},
-        CH8_INSTRUCTION::JP => {},
-        CH8_INSTRUCTION::CALL => {},
+        CH8_INSTRUCTION::RET => { ret(device, ins); },
+        CH8_INSTRUCTION::JP => { jp(device, ins); },
+        CH8_INSTRUCTION::CALL => { call(device, ins); },
         CH8_INSTRUCTION::SE => { se(device, ins); },
         CH8_INSTRUCTION::SNE => { sne(device, ins); },
         CH8_INSTRUCTION::SEVxVy => { sevxvy(device, ins); },
@@ -194,6 +194,11 @@ Return from a subroutine.
 
 The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
 */
+fn ret(device: &mut Chip8, ins: u16) {
+    let nnn = ins & 0x0FFF;
+    device.pc = device.stack[device.sp as usize];
+    device.sp = device.sp - 1;
+}
 
 /*
 1nnn - JP addr
@@ -201,6 +206,11 @@ Jump to location nnn.
 
 The interpreter sets the program counter to nnn.
 */
+fn jp(device: &mut Chip8, ins: u16) {
+    let nnn = ins & 0x0FFF;
+    println!("{:#4x?}", nnn);
+    device.pc = nnn;
+}
 
 /*
 2nnn - CALL addr
@@ -208,6 +218,12 @@ Call subroutine at nnn.
 
 The interpreter increments the stack pointer, then puts the current PC on the top of the stack. The PC is then set to nnn.
 */
+fn call(device: &mut Chip8, ins: u16) {
+    let nnn = ins & 0x0FFF;
+    device.sp = device.sp + 1;
+    device.stack[device.sp as usize] = device.pc;
+    device.pc = nnn;
+}
 
 /*
 3xkk - SE Vx, byte
@@ -236,7 +252,6 @@ fn sne(device: &mut Chip8, ins: u16) {
         device.pc += 2;
     }
 }
-
 
 /*
 5xy0 - SE Vx, Vy
