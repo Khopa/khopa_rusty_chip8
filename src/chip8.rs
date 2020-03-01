@@ -21,10 +21,10 @@ pub struct Chip8{
     pub(crate) vf: u8,
 
     // Delay Registers
-    pub(crate) d_register: u8,
+    pub(crate) dr: u8,
 
     // Sound register
-    pub(crate) s_register: u8,
+    pub(crate) sr: u8,
 
     // Display
     pub(crate) display: chip8_display::Chip8Display,
@@ -45,8 +45,8 @@ pub fn build_chip8() -> Chip8{
         memory: [0; chip8_memory::END_MEM],
         vn: [0; REGISTER_COUNT],
         vf: 0,
-        d_register: 0,
-        s_register: 0,
+        dr: 0,
+        sr: 0,
         display: chip8_display::build_chip8_display(),
         pc: chip8_memory::START_PRG as u16,
         sp: 0,
