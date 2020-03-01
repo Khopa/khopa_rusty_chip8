@@ -237,7 +237,7 @@ The interpreter compares register Vx to kk, and if they are equal, increments th
 fn se(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
-    if device.v_registers[register] == byte {
+    if device.vn[register] == byte {
         device.pc += 2;
     }
 }
@@ -251,7 +251,7 @@ The interpreter compares register Vx to kk, and if they are not equal, increment
 fn sne(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
-    if device.v_registers[register] != byte {
+    if device.vn[register] != byte {
         device.pc += 2;
     }
 }
@@ -265,7 +265,7 @@ The interpreter compares register Vx to register Vy, and if they are equal, incr
 fn sevxvy(device: &mut Chip8, ins: u16) {
     let x_register:usize = (ins & 0x0F00 >> 8) as usize;
     let y_register = (ins & 0x00F0 >> 4) as usize;
-    if device.v_registers[x_register] == device.v_registers[y_register] {
+    if device.vn[x_register] == device.vn[y_register] {
         device.pc += 2;
     }
 }
@@ -279,7 +279,7 @@ The interpreter puts the value kk into register Vx.
 fn ldvxb(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
-    device.v_registers[register] = byte;
+    device.vn[register] = byte;
 }
 
 /*
@@ -291,7 +291,7 @@ Adds the value kk to the value of register Vx, then stores the result in Vx.
 fn addvxb(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
-    device.v_registers[register] = device.v_registers[register] + byte;
+    device.vn[register] = device.vn[register] + byte;
 }
 
 
@@ -304,7 +304,7 @@ Stores the value of register Vy in register Vx.
 fn ldvxvy(device: &mut Chip8, ins: u16) {
     let x_register:usize = (ins & 0x0F00 >> 8) as usize;
     let y_register = (ins & 0x00F0 >> 4) as usize;
-    device.v_registers[x_register] = device.v_registers[y_register];
+    device.vn[x_register] = device.vn[y_register];
 }
 
 
@@ -317,7 +317,7 @@ Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
 fn or(device: &mut Chip8, ins: u16) {
     let x_register:usize = (ins & 0x0F00 >> 8) as usize;
     let y_register = (ins & 0x00F0 >> 4) as usize;
-    device.v_registers[x_register] = device.v_registers[x_register] | device.v_registers[y_register];
+    device.vn[x_register] = device.vn[x_register] | device.vn[y_register];
 }
 
 
@@ -331,7 +331,7 @@ Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
 fn and(device: &mut Chip8, ins: u16) {
     let x_register:usize = (ins & 0x0F00 >> 8) as usize;
     let y_register = (ins & 0x00F0 >> 4) as usize;
-    device.v_registers[x_register] = device.v_registers[x_register] & device.v_registers[y_register];
+    device.vn[x_register] = device.vn[x_register] & device.vn[y_register];
 }
 
 /*
@@ -344,7 +344,7 @@ Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the resu
 fn xor(device: &mut Chip8, ins: u16) {
     let x_register:usize = (ins & 0x0F00 >> 8) as usize;
     let y_register = (ins & 0x00F0 >> 4) as usize;
-    device.v_registers[x_register] = device.v_registers[x_register] ^ device.v_registers[y_register];
+    device.vn[x_register] = device.vn[x_register] ^ device.vn[y_register];
 }
 
 /*
@@ -358,9 +358,9 @@ fn addvxvy(device: &mut Chip8, ins: u16) {
     let x_register:usize = (ins & 0x0F00 >> 8) as usize;
     let y_register = (ins & 0x00F0 >> 4) as usize;
 
-    let result:u16 = (device.v_registers[x_register] as u16) + (device.v_registers[y_register] as u16);
+    let result:u16 = (device.vn[x_register] as u16) + (device.vn[y_register] as u16);
     if result > 0xFF { device.vf = 1; } else { device.vf = 0; };
-    device.v_registers[x_register] = (result & 0x00FF) as u8;
+    device.vn[x_register] = (result & 0x00FF) as u8;
 }
 
 /*
@@ -422,7 +422,7 @@ fn rnd(device: &mut Chip8, ins: u16) {
     let register:usize = (ins & 0x0F00 >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
     let rand = rand::thread_rng().gen_range(0, 255);
-    device.v_registers[register] = rand & byte;
+    device.vn[register] = rand & byte;
     println!("{}", rand);
 }
 

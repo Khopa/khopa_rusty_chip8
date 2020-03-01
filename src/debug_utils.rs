@@ -9,7 +9,7 @@ use crate::chip8_memory::END_MEM;
  */
 pub fn print_registers(device: &chip8::Chip8) {
     for n in 0..chip8::REGISTER_COUNT {
-        print!("0x{:02x?} | ", device.v_registers[n]);
+        print!("0x{:02x?} | ", device.vn[n]);
     }
     println!();
 }
