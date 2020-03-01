@@ -26,6 +26,9 @@ pub struct Chip8{
     // Sound register
     pub(crate) sr: u8,
 
+    // I Register
+    pub(crate) i: u16,
+
     // Display
     pub(crate) display: chip8_display::Chip8Display,
 
@@ -47,6 +50,7 @@ pub fn build_chip8() -> Chip8{
         vf: 0,
         dr: 0,
         sr: 0,
+        i: 0,
         display: chip8_display::build_chip8_display(),
         pc: chip8_memory::START_PRG as u16,
         sp: 0,

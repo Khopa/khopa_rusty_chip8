@@ -150,7 +150,7 @@ pub fn exec(ins: u16, device: &mut Chip8){
         CH8_INSTRUCTION::SUBN => { subnvxvy(device, ins);},
         CH8_INSTRUCTION::SHL => { shl(device, ins); },
         CH8_INSTRUCTION::SNEVxVy => { snevxvy(device, ins); },
-        CH8_INSTRUCTION::LDIaddr => {},
+        CH8_INSTRUCTION::LDIaddr => { ldi(device, ins); },
         CH8_INSTRUCTION::JPV0addr => {},
         CH8_INSTRUCTION::RND => { rnd(device, ins); },
         CH8_INSTRUCTION::DRW => {},
@@ -460,6 +460,10 @@ Set I = nnn.
 
 The value of register I is set to nnn.
 */
+fn ldi(device: &mut Chip8, ins: u16) {
+    let nnn: u16 = ins & 0x0FFF;
+    device.i = nnn;
+}
 
 /*
 Bnnn - JP V0, addr
