@@ -169,7 +169,6 @@ pub fn exec(ins: u16, device: &mut Chip8){
     return;
 }
 
-
 /**
 * 0nnn - SYS addr
 * Jump to a machine code routine at nnn.
@@ -263,9 +262,9 @@ Skip next instruction if Vx = Vy.
 The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
 */
 fn sevxvy(device: &mut Chip8, ins: u16) {
-    let x_register:usize = (ins & 0x0F00 >> 8) as usize;
-    let y_register = (ins & 0x00F0 >> 4) as usize;
-    if device.vn[x_register] == device.vn[y_register] {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y = (ins & 0x00F0 >> 4) as usize;
+    if device.vn[x] == device.vn[y] {
         device.pc += 2;
     }
 }
@@ -302,9 +301,9 @@ Set Vx = Vy.
 Stores the value of register Vy in register Vx.
 */
 fn ldvxvy(device: &mut Chip8, ins: u16) {
-    let x_register:usize = (ins & 0x0F00 >> 8) as usize;
-    let y_register = (ins & 0x00F0 >> 4) as usize;
-    device.vn[x_register] = device.vn[y_register];
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y = (ins & 0x00F0 >> 4) as usize;
+    device.vn[x] = device.vn[y];
 }
 
 
@@ -315,9 +314,9 @@ Set Vx = Vx OR Vy.
 Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
 */
 fn or(device: &mut Chip8, ins: u16) {
-    let x_register:usize = (ins & 0x0F00 >> 8) as usize;
-    let y_register = (ins & 0x00F0 >> 4) as usize;
-    device.vn[x_register] = device.vn[x_register] | device.vn[y_register];
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y = (ins & 0x00F0 >> 4) as usize;
+    device.vn[x] = device.vn[x] | device.vn[y];
 }
 
 
@@ -329,9 +328,9 @@ Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
 
 */
 fn and(device: &mut Chip8, ins: u16) {
-    let x_register:usize = (ins & 0x0F00 >> 8) as usize;
-    let y_register = (ins & 0x00F0 >> 4) as usize;
-    device.vn[x_register] = device.vn[x_register] & device.vn[y_register];
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y = (ins & 0x00F0 >> 4) as usize;
+    device.vn[x] = device.vn[x] & device.vn[y];
 }
 
 /*
@@ -342,9 +341,9 @@ Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the resu
 
 */
 fn xor(device: &mut Chip8, ins: u16) {
-    let x_register:usize = (ins & 0x0F00 >> 8) as usize;
-    let y_register = (ins & 0x00F0 >> 4) as usize;
-    device.vn[x_register] = device.vn[x_register] ^ device.vn[y_register];
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y = (ins & 0x00F0 >> 4) as usize;
+    device.vn[x] = device.vn[x] ^ device.vn[y];
 }
 
 /*
@@ -355,12 +354,11 @@ The values of Vx and Vy are added together. If the result is greater than 8 bits
 VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
 */
 fn addvxvy(device: &mut Chip8, ins: u16) {
-    let x_register:usize = (ins & 0x0F00 >> 8) as usize;
-    let y_register = (ins & 0x00F0 >> 4) as usize;
-
-    let result:u16 = (device.vn[x_register] as u16) + (device.vn[y_register] as u16);
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y = (ins & 0x00F0 >> 4) as usize;
+    let result:u16 = (device.vn[x] as u16) + (device.vn[y] as u16);
     if result > 0xFF { device.vf = 1; } else { device.vf = 0; };
-    device.vn[x_register] = (result & 0x00FF) as u8;
+    device.vn[x] = (result & 0x00FF) as u8;
 }
 
 /*
