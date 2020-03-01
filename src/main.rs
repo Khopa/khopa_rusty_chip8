@@ -26,6 +26,7 @@ fn main() {
 
     for i in 0..1024 {
         step(device.borrow_mut());
+        print_registers(&device);
     }
 
 }

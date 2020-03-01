@@ -8,13 +8,10 @@ use crate::chip8_memory::END_MEM;
  * Display the registers in console
  */
 pub fn print_registers(device: &chip8::Chip8) {
-    println!("----------------------------");
-    println!("CHIP 8 Registers : ");
-    println!("----------------------------");
     for n in 0..chip8::REGISTER_COUNT {
-        println!("V{} -> 0x{:02x?} | {:08b}", n, device.v_registers[n], device.v_registers[n]);
+        print!("0x{:02x?} | ", device.v_registers[n]);
     }
-    println!("----------------------------");
+    println!();
 }
 
 /**

@@ -1,6 +1,9 @@
+extern crate rand;
 use crate::chip8::Chip8;
 use crate::chip8_display;
 use crate::chip8_display::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
+
+use rand::Rng;
 
 #[derive(Debug)]
 #[derive(PartialEq, Eq)]
@@ -135,9 +138,9 @@ pub fn exec(ins: u16, device: &mut Chip8){
         CH8_INSTRUCTION::SNE => { sne(device, ins); },
         CH8_INSTRUCTION::SEVxVy => { sevxvy(device, ins); },
         CH8_INSTRUCTION::LDVxbyte => { ldvxb(device, ins); },
-        CH8_INSTRUCTION::ADDVxbyte => {},
-        CH8_INSTRUCTION::LDVxVy => {},
-        CH8_INSTRUCTION::OR => {},
+        CH8_INSTRUCTION::ADDVxbyte => { addvxb(device, ins); },
+        CH8_INSTRUCTION::LDVxVy => { ldvxvy(device, ins); },
+        CH8_INSTRUCTION::OR => { or(device, ins); },
         CH8_INSTRUCTION::AND => {},
         CH8_INSTRUCTION::XOR => {},
         CH8_INSTRUCTION::ADDVxVy => {},
@@ -148,7 +151,7 @@ pub fn exec(ins: u16, device: &mut Chip8){
         CH8_INSTRUCTION::SNEVxVy => {},
         CH8_INSTRUCTION::LDIaddr => {},
         CH8_INSTRUCTION::JPV0addr => {},
-        CH8_INSTRUCTION::RND => {},
+        CH8_INSTRUCTION::RND => { rnd(device, ins); },
         CH8_INSTRUCTION::DRW => {},
         CH8_INSTRUCTION::SKPVx => {},
         CH8_INSTRUCTION::SKNPVx => {},
@@ -285,6 +288,11 @@ Set Vx = Vx + kk.
 
 Adds the value kk to the value of register Vx, then stores the result in Vx.
 */
+fn addvxb(device: &mut Chip8, ins: u16) {
+    let register:usize = (ins & 0x0F00 >> 8) as usize;
+    let byte = (ins & 0x00FF) as u8;
+    device.v_registers[register] = device.v_registers[register] + byte;
+}
 
 
 /*
@@ -293,6 +301,11 @@ Set Vx = Vy.
 
 Stores the value of register Vy in register Vx.
 */
+fn ldvxvy(device: &mut Chip8, ins: u16) {
+    let x_register:usize = (ins & 0x0F00 >> 8) as usize;
+    let y_register = (ins & 0x00F0 >> 4) as usize;
+    device.v_registers[x_register] = device.v_registers[y_register];
+}
 
 
 /*
@@ -301,6 +314,12 @@ Set Vx = Vx OR Vy.
 
 Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx. A bitwise OR compares the corrseponding bits from two values, and if either bit is 1, then the same bit in the result is also 1. Otherwise, it is 0.
 */
+fn or(device: &mut Chip8, ins: u16) {
+    let register:usize = (ins & 0x0F00 >> 8) as usize;
+    let byte = (ins & 0x00FF) as u8;
+    device.v_registers[register] = device.v_registers[register] | device.v_registers[register] + byte;
+}
+
 
 /*
 8xy2 - AND Vx, Vy
@@ -378,6 +397,14 @@ Set Vx = random byte AND kk.
 
 The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
 */
+fn rnd(device: &mut Chip8, ins: u16) {
+    let register:usize = (ins & 0x0F00 >> 8) as usize;
+    let byte = (ins & 0x00FF) as u8;
+    let rand = rand::thread_rng().gen_range(0, 255);
+    device.v_registers[register] = rand & byte;
+    println!("{}", rand);
+}
+
 
 /*
 Dxyn - DRW Vx, Vy, nibble
