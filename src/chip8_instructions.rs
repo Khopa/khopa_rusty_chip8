@@ -4,6 +4,7 @@ use crate::chip8_display;
 use crate::chip8_display::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
 
 use rand::Rng;
+use std::ops::SubAssign;
 
 #[derive(Debug)]
 #[derive(PartialEq, Eq)]
@@ -144,11 +145,11 @@ pub fn exec(ins: u16, device: &mut Chip8){
         CH8_INSTRUCTION::AND => { and(device, ins); },
         CH8_INSTRUCTION::XOR => { xor(device, ins); },
         CH8_INSTRUCTION::ADDVxVy => { addvxvy(device, ins); },
-        CH8_INSTRUCTION::SUBVxVy => {},
-        CH8_INSTRUCTION::SHR => {},
-        CH8_INSTRUCTION::SUBN => {},
-        CH8_INSTRUCTION::SHL => {},
-        CH8_INSTRUCTION::SNEVxVy => {},
+        CH8_INSTRUCTION::SUBVxVy => { subvxvy(device, ins); },
+        CH8_INSTRUCTION::SHR => { shr(device, ins); },
+        CH8_INSTRUCTION::SUBN => { subnvxvy(device, ins);},
+        CH8_INSTRUCTION::SHL => { shl(device, ins); },
+        CH8_INSTRUCTION::SNEVxVy => { snevxvy(device, ins); },
         CH8_INSTRUCTION::LDIaddr => {},
         CH8_INSTRUCTION::JPV0addr => {},
         CH8_INSTRUCTION::RND => { rnd(device, ins); },
@@ -367,27 +368,76 @@ Set Vx = Vx - Vy, set VF = NOT borrow.
 
 If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
 */
+fn subvxvy(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
+
+    if device.vn[x] > device.vn[y] { device.vf = 1;} else { device.vf = 0; }
+    device.vn[x] = device.vn[x] - device.vn[y]
+}
 
 /*
 8xy6 - SHR Vx {, Vy}
-Set Vx = Vx SHR 1.
+Set Vx = Vy SHR 1.
 
-If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Instruction-Set#notes
+Store the value of register VY shifted right one bit in register VX¹
+Set register VF to the least significant bit prior to the shift
+VY is unchanged
+
 */
+fn shr(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
+
+    device.vf = device.vn[y]&0x01;
+    device.vn[x] = device.vn[y].wrapping_shr(1);
+}
 
 /*
 8xy7 - SUBN Vx, Vy
 Set Vx = Vy - Vx, set VF = NOT borrow.
 
 If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
+
+Set register VX to the value of VY minus VX
+Set VF to 00 if a borrow occurs
+Set VF to 01 if a borrow does not occur
+
 */
+fn subnvxvy(device: &mut Chip8, ins: u16) {
+    let x: usize = (ins & 0x0F00 >> 8) as usize;
+    let y: usize = (ins & 0x00F0 >> 4) as usize;
+
+    if device.vn[y] > device.vn[x] {
+        device.vf = 1;
+        device.vn[x] = device.vn[y] - device.vn[x];
+    } else {
+        device.vf = 0;
+        device.vn[x] = 0;
+    }
+
+}
 
 /*
 8xyE - SHL Vx {, Vy}
 Set Vx = Vx SHL 1.
 
 If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+
+https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Instruction-Set#notes
+Store the value of register VY shifted left one bit in register VX¹
+Set register VF to the most significant bit prior to the shift
+VY is unchanged
+
 */
+fn shl(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
+
+    device.vf = device.vn[y]&0x80 >> 7;
+    device.vn[x] = device.vn[y].wrapping_shl(1);
+}
 
 /*
 9xy0 - SNE Vx, Vy
@@ -395,6 +445,14 @@ Skip next instruction if Vx != Vy.
 
 The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
 */
+fn snevxvy(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
+
+    if device.vn[x] != device.vn[y] {
+        device.pc = device.pc + 2;
+    }
+}
 
 /*
 Annn - LD I, addr
