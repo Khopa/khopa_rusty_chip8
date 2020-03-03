@@ -3,6 +3,7 @@ use crate::chip8_display;
 use crate::chip8_display::Chip8Display;
 use crate::chip8_memory;
 use crate::chip8_memory::END_MEM;
+use std::ops::Sub;
 
 /**
  * Display the registers in console
@@ -53,18 +54,21 @@ pub fn print_display(device: &chip8::Chip8) {
  */
 pub fn print_memory(device: &chip8::Chip8) {
 
-    let mut position = END_MEM;
-    for b in 0..chip8_memory::END_MEM/64 {
+    let mut position = END_MEM-1;
+    for b in 0..(chip8_memory::END_MEM/64 + 1) {
         if b % 8 == 0 { println!() };
         let mut not_blank: bool = false;
-        for i in 1..9 {
+        for i in 0..8 {
             if device.memory[position - i] > 0 {
                 not_blank = true;
                 break;
             };
+            //println!("{}", position - i)
         }
         if not_blank { print!("+"); } else { print!("."); }
-        position = position - 64;
+        if position > 64 {
+            position = position - 64;
+        }
     }
 
 }

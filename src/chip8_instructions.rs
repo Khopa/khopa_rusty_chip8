@@ -153,18 +153,18 @@ pub fn exec(ins: u16, device: &mut Chip8){
         CH8_INSTRUCTION::LDIaddr => { ldi(device, ins); },
         CH8_INSTRUCTION::JPV0addr => {},
         CH8_INSTRUCTION::RND => { rnd(device, ins); },
-        CH8_INSTRUCTION::DRW => {},
-        CH8_INSTRUCTION::SKPVx => {},
+        CH8_INSTRUCTION::DRW => { drw(device, ins); },
+        CH8_INSTRUCTION::SKPVx => { },
         CH8_INSTRUCTION::SKNPVx => {},
-        CH8_INSTRUCTION::LDVxDT => {},
+        CH8_INSTRUCTION::LDVxDT => { ldvxdt(device, ins); },
         CH8_INSTRUCTION::LDVxK => {},
-        CH8_INSTRUCTION::LDDTVx => {},
-        CH8_INSTRUCTION::LDSTVx => {},
-        CH8_INSTRUCTION::ADDIVx => {},
-        CH8_INSTRUCTION::LDFVx => {},
-        CH8_INSTRUCTION::LDBVx => {},
-        CH8_INSTRUCTION::LDIVx => {},
-        CH8_INSTRUCTION::LDVxI => {},
+        CH8_INSTRUCTION::LDDTVx => { lddtvx(device, ins); },
+        CH8_INSTRUCTION::LDSTVx => { ldstvx(device, ins); },
+        CH8_INSTRUCTION::ADDIVx => { addivx(device, ins); },
+        CH8_INSTRUCTION::LDFVx => { ldfvx(device, ins); },
+        CH8_INSTRUCTION::LDBVx => { ldbvx(device, ins); },
+        CH8_INSTRUCTION::LDIVx => { ldivx(device, ins);},
+        CH8_INSTRUCTION::LDVxI => { ldvxii(device, ins);},
         CH8_INSTRUCTION::NOOP => {},
     }
     return;
@@ -471,6 +471,10 @@ Jump to location nnn + V0.
 
 The program counter is set to nnn plus the value of V0.
 */
+fn jpv0addr(device: &mut Chip8, ins: u16) {
+    let nnn: u16 = ins & 0x0FFF;
+    device.pc = device.vn[0] as u16 + nnn;
+}
 
 /*
 Cxkk - RND Vx, byte
@@ -491,8 +495,28 @@ fn rnd(device: &mut Chip8, ins: u16) {
 Dxyn - DRW Vx, Vy, nibble
 Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
 
-The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen. See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
+The interpreter reads n bytes from memory, starting at the address stored in I.
+These bytes are then displayed as sprites on screen at coordinates (Vx, Vy).
+Sprites are XORed onto the existing screen.
+If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0.
+If the sprite is positioned so part of it is outside the coordinates of the display,
+it wraps around to the opposite side of the screen.
+
+See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
 */
+fn drw(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let n:usize = (ins & 0x000F) as usize;
+
+    let xored: bool = false;
+    /*for i in 0..n{
+        let sprite_byte = device.memory[device.i + n as u16];
+        device.display_data[y/8][x/8] = device.display_data[y][x] ^ sprite_byte;
+    }*/
+
+}
+
 
 /*
 Ex9E - SKP Vx
@@ -514,6 +538,10 @@ Set Vx = delay timer value.
 
 The value of DT is placed into Vx.
 */
+fn ldvxdt(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    device.vn[x] = device.dt;
+}
 
 /*
 Fx0A - LD Vx, K
@@ -528,6 +556,11 @@ Set delay timer = Vx.
 
 DT is set equal to the value of Vx.
 */
+fn lddtvx(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    device.dt = device.vn[x];
+}
+
 
 /*
 Fx18 - LD ST, Vx
@@ -535,6 +568,10 @@ Set sound timer = Vx.
 
 ST is set equal to the value of Vx.
 */
+fn ldstvx(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    device.st = device.vn[x];
+}
 
 /*
 Fx1E - ADD I, Vx
@@ -542,13 +579,27 @@ Set I = I + Vx.
 
 The values of I and Vx are added, and the results are stored in I.
 */
+fn addivx(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    device.i = device.i + (device.vn[x] as u16);
+}
+
 
 /*
 Fx29 - LD F, Vx
 Set I = location of sprite for digit Vx.
 
-The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx. See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
+The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx.
+See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
 */
+fn ldfvx(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let value:u8 = device.vn[x];
+    if value <= 15{
+        device.i = (5 * value) as u16;
+    }
+
+}
 
 /*
 Fx33 - LD B, Vx
@@ -556,6 +607,14 @@ Store BCD representation of Vx in memory locations I, I+1, and I+2.
 
 The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
 */
+fn ldbvx(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+
+    let number = device.vn[x];
+    device.memory[device.i as usize] = number/100;
+    device.memory[device.i as usize + 1] = (number-(number/100)*100)/10;
+    device.memory[device.i as usize + 2] = number - ((number-(number/100)*100)/10)*10 - (number/100)*100;
+}
 
 /*
 Fx55 - LD [I], Vx
@@ -563,6 +622,12 @@ Store registers V0 through Vx in memory starting at location I.
 
 The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
 */
+fn ldivx(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    for n in 0..x{
+        device.memory[device.i as usize + (n as usize)] = device.vn[n];
+    }
+}
 
 /*
 Fx65 - LD Vx, [I]
@@ -570,3 +635,9 @@ Read registers V0 through Vx from memory starting at location I.
 
 The interpreter reads values from memory starting at location I into registers V0 through Vx.
 */
+fn ldvxii(device: &mut Chip8, ins: u16) {
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    for n in 0..x{
+        device.vn[n] = device.memory[device.i as usize + (n as usize)];
+    }
+}
