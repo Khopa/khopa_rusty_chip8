@@ -12,6 +12,7 @@ pub fn print_registers(device: &chip8::Chip8) {
     for n in 0..chip8::REGISTER_COUNT {
         print!("0x{:02x?} | ", device.vn[n]);
     }
+    print!("| i = {}", device.i);
     println!();
 }
 
@@ -23,7 +24,7 @@ pub fn print_display(device: &chip8::Chip8) {
         print!("|");
         for j in 0..chip8_display::DISPLAY_WIDTH / 8 {
             for b in 0..8 {
-                if device.display.display_data[i][j] & (1 << b) > 0 {
+                if device.display.display_data[i][j] & (0b10000000 >> b) > 0 {
                     print!("{}", "⬛");
                 } else {
                     print!("{}", "⬜");

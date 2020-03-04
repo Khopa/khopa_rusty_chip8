@@ -7,9 +7,19 @@ pub struct Chip8Display{
 }
 
 pub fn build_chip8_display() -> Chip8Display {
-    return Chip8Display{
-        display_data: [[0; DISPLAY_WIDTH/8];DISPLAY_HEIGHT]
+    let mut display = Chip8Display{
+        display_data: [[0b00000000; DISPLAY_WIDTH/8];DISPLAY_HEIGHT]
     };
+    return display;
+}
+
+pub fn xor_px_at(display: &mut Chip8Display, x:usize, y:usize){
+    let mut ry = y;
+    let mut rx = x;
+
+    if rx >= DISPLAY_WIDTH{ rx = rx - DISPLAY_WIDTH; }
+    if ry >= DISPLAY_HEIGHT{ ry = ry - DISPLAY_HEIGHT; }
+    display.display_data[ry][rx/8] ^= (0b1000000 >> (rx - (rx / 8) * 8)) as u8;
 }
 
 /**

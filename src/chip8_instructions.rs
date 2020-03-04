@@ -1,10 +1,12 @@
 extern crate rand;
 use crate::chip8::Chip8;
 use crate::chip8_display;
-use crate::chip8_display::{DISPLAY_HEIGHT, DISPLAY_WIDTH};
+use crate::chip8_display::{DISPLAY_HEIGHT, DISPLAY_WIDTH, xor_px_at};
 
 use rand::Rng;
-use std::ops::SubAssign;
+use std::ops::{SubAssign, Add};
+use std::borrow::BorrowMut;
+use crate::debug_utils::print_display;
 
 #[derive(Debug)]
 #[derive(PartialEq, Eq)]
@@ -69,9 +71,9 @@ pub fn get_instruction_type(ins: u16) -> CH8_INSTRUCTION {
     } else if ins & 0xF000 == 0x4000 {
         return CH8_INSTRUCTION::SNE;
     } else if ins & 0xF000 == 0x5000 {
-        return CH8_INSTRUCTION::SNE;
-    } else if ins & 0xF000 == 0x6000 {
         return CH8_INSTRUCTION::SEVxVy;
+    } else if ins & 0xF000 == 0x6000 {
+        return CH8_INSTRUCTION::LDVxbyte;
     } else if ins & 0xF000 == 0x7000 {
         return CH8_INSTRUCTION::ADDVxbyte;
     } else if ins & 0xF00F == 0x8001 {
@@ -128,7 +130,8 @@ pub fn get_instruction_type(ins: u16) -> CH8_INSTRUCTION {
 
 pub fn exec(ins: u16, device: &mut Chip8){
     let itype = get_instruction_type(ins);
-    println!("{:#04x?} | {:#016b} {:#04x?} | {:.16?}", device.pc, ins, ins, itype);
+    print!("{:#04x?} | {:#04x?} | {:.16?}", device.pc, ins, itype);
+    // println!("{:#04x?} | {:#016b} {:#04x?} | {:.16?}", device.pc, ins, ins, itype);
     match itype {
         CH8_INSTRUCTION::SYS => { sys(device, ins); },
         CH8_INSTRUCTION::CLS => { cls(device, ins); },
@@ -167,6 +170,7 @@ pub fn exec(ins: u16, device: &mut Chip8){
         CH8_INSTRUCTION::LDVxI => { ldvxii(device, ins);},
         CH8_INSTRUCTION::NOOP => {},
     }
+    println!();
     return;
 }
 
@@ -211,8 +215,8 @@ The interpreter sets the program counter to nnn.
 */
 fn jp(device: &mut Chip8, ins: u16) {
     let nnn:u16 = ins & 0x0FFF;
-    println!("{:#4x?}", nnn);
-    device.pc = nnn;
+    print!(" to {:#4x?}", nnn);
+    device.pc = nnn - 2;
 }
 
 /*
@@ -225,7 +229,7 @@ fn call(device: &mut Chip8, ins: u16) {
     let nnn:u16 = ins & 0x0FFF;
     device.sp = device.sp + 1;
     device.stack[device.sp as usize] = device.pc;
-    device.pc = nnn;
+    device.pc = nnn - 2;
 }
 
 /*
@@ -263,8 +267,8 @@ Skip next instruction if Vx = Vy.
 The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
 */
 fn sevxvy(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
     if device.vn[x] == device.vn[y] {
         device.pc += 2;
     }
@@ -277,9 +281,10 @@ Set Vx = kk.
 The interpreter puts the value kk into register Vx.
 */
 fn ldvxb(device: &mut Chip8, ins: u16) {
-    let register:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let byte:u8  = (ins & 0x00FF) as u8;
-    device.vn[register] = byte;
+    device.vn[x] = byte;
+    print!("LD V[{}] {}", x, byte)
 }
 
 /*
@@ -289,9 +294,9 @@ Set Vx = Vx + kk.
 Adds the value kk to the value of register Vx, then stores the result in Vx.
 */
 fn addvxb(device: &mut Chip8, ins: u16) {
-    let register:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
-    device.vn[register] = device.vn[register] + byte;
+    device.vn[x] = device.vn[x].saturating_add(byte);
 }
 
 
@@ -302,8 +307,8 @@ Set Vx = Vy.
 Stores the value of register Vy in register Vx.
 */
 fn ldvxvy(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
     device.vn[x] = device.vn[y];
 }
 
@@ -315,8 +320,8 @@ Set Vx = Vx OR Vy.
 Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
 */
 fn or(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
     device.vn[x] = device.vn[x] | device.vn[y];
 }
 
@@ -329,8 +334,8 @@ Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
 
 */
 fn and(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
     device.vn[x] = device.vn[x] & device.vn[y];
 }
 
@@ -342,8 +347,8 @@ Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the resu
 
 */
 fn xor(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
     device.vn[x] = device.vn[x] ^ device.vn[y];
 }
 
@@ -355,8 +360,8 @@ The values of Vx and Vy are added together. If the result is greater than 8 bits
 VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
 */
 fn addvxvy(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
     let result:u16 = (device.vn[x] as u16) + (device.vn[y] as u16);
     if result > 0xFF { device.vf = 1; } else { device.vf = 0; };
     device.vn[x] = (result & 0x00FF) as u8;
@@ -369,8 +374,8 @@ Set Vx = Vx - Vy, set VF = NOT borrow.
 If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
 */
 fn subvxvy(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
 
     if device.vn[x] > device.vn[y] { device.vf = 1;} else { device.vf = 0; }
     device.vn[x] = device.vn[x] - device.vn[y]
@@ -387,8 +392,8 @@ VY is unchanged
 
 */
 fn shr(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
 
     device.vf = device.vn[y]&0x01;
     device.vn[x] = device.vn[y].wrapping_shr(1);
@@ -432,8 +437,8 @@ VY is unchanged
 
 */
 fn shl(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
 
     device.vf = device.vn[y]&0x80 >> 7;
     device.vn[x] = device.vn[y].wrapping_shl(1);
@@ -446,8 +451,8 @@ Skip next instruction if Vx != Vy.
 The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
 */
 fn snevxvy(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let y:usize = ((ins & 0x00F0) >> 4) as usize;
 
     if device.vn[x] != device.vn[y] {
         device.pc = device.pc + 2;
@@ -483,11 +488,11 @@ Set Vx = random byte AND kk.
 The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
 */
 fn rnd(device: &mut Chip8, ins: u16) {
-    let register:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
     let rand = rand::thread_rng().gen_range(0, 255);
-    device.vn[register] = rand & byte;
-    println!("{}", rand);
+    device.vn[x] = rand & byte;
+    print!(" -> {}", rand);
 }
 
 
@@ -505,15 +510,29 @@ it wraps around to the opposite side of the screen.
 See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
 */
 fn drw(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
-    let y:usize = (ins & 0x00F0 >> 4) as usize;
+    let mut x:usize = ((ins & 0x0F00) >> 8) as usize;
+    let mut y:usize = ((ins & 0x00F0) >> 4) as usize;
     let n:usize = (ins & 0x000F) as usize;
 
-    let xored: bool = false;
-    /*for i in 0..n{
-        let sprite_byte = device.memory[device.i + n as u16];
-        device.display_data[y/8][x/8] = device.display_data[y][x] ^ sprite_byte;
-    }*/
+    let mut xored: bool = false;
+
+    for i in 0..n{
+        let sprite_byte = device.memory[(device.i as usize).saturating_add(n as usize)];
+        for b in 0..8 {
+            if sprite_byte & (0b10000000 >> b) > 0 {
+                xor_px_at(device.display.borrow_mut(), x+b, y+i);
+                println!("PX at : {} | {}", x+b, y+i);
+            }
+        }
+    }
+
+    if(xored) {
+        device.vf = 1;
+    }else{
+        device.vf = 0;
+    }
+
+    print_display(device);
 
 }
 
@@ -539,7 +558,7 @@ Set Vx = delay timer value.
 The value of DT is placed into Vx.
 */
 fn ldvxdt(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     device.vn[x] = device.dt;
 }
 
@@ -557,7 +576,7 @@ Set delay timer = Vx.
 DT is set equal to the value of Vx.
 */
 fn lddtvx(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     device.dt = device.vn[x];
 }
 
@@ -569,7 +588,7 @@ Set sound timer = Vx.
 ST is set equal to the value of Vx.
 */
 fn ldstvx(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     device.st = device.vn[x];
 }
 
@@ -580,7 +599,7 @@ Set I = I + Vx.
 The values of I and Vx are added, and the results are stored in I.
 */
 fn addivx(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     device.i = device.i + (device.vn[x] as u16);
 }
 
@@ -593,7 +612,7 @@ The value of I is set to the location for the hexadecimal sprite corresponding t
 See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
 */
 fn ldfvx(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let value:u8 = device.vn[x];
     if value <= 15{
         device.i = (5 * value) as u16;
@@ -608,7 +627,7 @@ Store BCD representation of Vx in memory locations I, I+1, and I+2.
 The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
 */
 fn ldbvx(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
 
     let number = device.vn[x];
     device.memory[device.i as usize] = number/100;
@@ -623,7 +642,7 @@ Store registers V0 through Vx in memory starting at location I.
 The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
 */
 fn ldivx(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     for n in 0..x{
         device.memory[device.i as usize + (n as usize)] = device.vn[n];
     }
@@ -636,7 +655,7 @@ Read registers V0 through Vx from memory starting at location I.
 The interpreter reads values from memory starting at location I into registers V0 through Vx.
 */
 fn ldvxii(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     for n in 0..x{
         device.vn[n] = device.memory[device.i as usize + (n as usize)];
     }

@@ -78,13 +78,15 @@ fn load_default_sprites(device: &mut Chip8){
  */
 fn load_sprite_at(device: &mut Chip8, address: usize, sprite: [u8; 5]){
     for i in 0..5{
-        println!("At : {} ", (address + i));
         device.memory[address + i] = sprite[i];
     }
 }
 
+/**
+ * Step
+ */
 pub fn step(device: &mut Chip8){
-    let instruction:u16 = (device.memory[(device.pc+ 1) as usize] as u16).shl(8) + (device.memory[device.pc as usize] as u16);
+    let instruction:u16 = (device.memory[(device.pc+ 1) as usize] as u16) + (device.memory[device.pc as usize] as u16).shl(8);
     exec(instruction, device);
     device.pc = device.pc + 2;
 }
