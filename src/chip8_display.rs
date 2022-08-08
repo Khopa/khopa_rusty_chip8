@@ -13,13 +13,23 @@ pub fn build_chip8_display() -> Chip8Display {
     return display;
 }
 
-pub fn xor_px_at(display: &mut Chip8Display, x:usize, y:usize){
+pub fn xor_px_at(display: &mut Chip8Display, x:usize, y:usize) -> bool{
     let mut ry = y;
     let mut rx = x;
 
     if rx >= DISPLAY_WIDTH{ rx = rx - DISPLAY_WIDTH; }
     if ry >= DISPLAY_HEIGHT{ ry = ry - DISPLAY_HEIGHT; }
-    display.display_data[ry][rx/8] ^= (0b1000000 >> (rx - (rx / 8) * 8)) as u8;
+
+    let mut xored = false;
+    if((display.display_data[ry][rx/8] & (0b1000000 >> (rx%8))) > 0){
+        xored = true;
+    }else{
+        xored = false;
+    }
+
+    display.display_data[ry][rx/8] ^= (0b1000000 >> (rx%8)) as u8;
+
+    return xored;
 }
 
 /**

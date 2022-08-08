@@ -28,6 +28,7 @@ fn main() {
 
     for i in 0..64 {
         step(device.borrow_mut());
+        println!("CPU CYCLE ## {}", i);
         print_registers(&device);
         //sleep(time::Duration::from_millis(2));
     }

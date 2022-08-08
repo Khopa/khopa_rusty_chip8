@@ -130,7 +130,7 @@ pub fn get_instruction_type(ins: u16) -> CH8_INSTRUCTION {
 
 pub fn exec(ins: u16, device: &mut Chip8){
     let itype = get_instruction_type(ins);
-    print!("{:#04x?} | {:#04x?} | {:.16?}", device.pc, ins, itype);
+    print!("{:.16?} | {:#04x?} | {:#04x?} | {:#016b} | ", itype, device.pc, ins, ins);
     // println!("{:#04x?} | {:#016b} {:#04x?} | {:.16?}", device.pc, ins, ins, itype);
     match itype {
         CH8_INSTRUCTION::SYS => { sys(device, ins); },
@@ -490,7 +490,7 @@ The interpreter generates a random number from 0 to 255, which is then ANDed wit
 fn rnd(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
-    let rand = rand::thread_rng().gen_range(0, 255);
+    let rand = rand::thread_rng().gen_range(0..255);
     device.vn[x] = rand & byte;
     print!(" -> {}", rand);
 }
@@ -512,21 +512,24 @@ See instruction 8xy3 for more information on XOR, and section 2.4, Display, for 
 fn drw(device: &mut Chip8, ins: u16) {
     let mut x:usize = ((ins & 0x0F00) >> 8) as usize;
     let mut y:usize = ((ins & 0x00F0) >> 4) as usize;
-    let n:usize = (ins & 0x000F) as usize;
 
+    x = device.vn[x] as usize;
+    y = device.vn[y] as usize;
+
+    let n:usize = (ins & 0x000F) as usize;
     let mut xored: bool = false;
 
     for i in 0..n{
-        let sprite_byte = device.memory[(device.i as usize).saturating_add(n as usize)];
+        let sprite_byte = device.memory[(device.i as usize).saturating_add(i as usize)];
         for b in 0..8 {
             if sprite_byte & (0b10000000 >> b) > 0 {
-                xor_px_at(device.display.borrow_mut(), x+b, y+i);
+                xored &= xor_px_at(device.display.borrow_mut(), x+b, y+i);
                 println!("PX at : {} | {}", x+b, y+i);
             }
         }
     }
 
-    if(xored) {
+    if xored {
         device.vf = 1;
     }else{
         device.vf = 0;
