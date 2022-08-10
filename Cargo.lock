@@ -3,17 +3,41 @@
 version = 3
 
 [[package]]
-name = "RustyChip8"
-version = "0.1.0"
-dependencies = [
- "rand",
-]
+name = "cc"
+version = "1.0.73"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fff2a6927b3bb87f9595d67196a70493f627687a71d87a0d692242c33f58c11"
 
 [[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "chlorine"
+version = "1.0.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75476fe966a8af7c0ceae2a3e514afa87d4451741fcdfab8bfaa07ad301842ec"
+
+[[package]]
+name = "cmake"
+version = "0.1.48"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8ad8cef104ac57b68b89df3208164d228503abbdce70f6880ffa3d970e7443a"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "fermium"
+version = "20014.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d91ca2119a89bfd3d3069b04631b36c918c1a5e51ac1bb339bd75d77d103d427"
+dependencies = [
+ "chlorine",
+ "cmake",
+]
 
 [[package]]
 name = "getrandom"
@@ -24,6 +48,15 @@ dependencies = [
  "cfg-if",
  "libc",
  "wasi",
+]
+
+[[package]]
+name = "gl33"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29b2b7ada5ed872363f5d27e54e7cae69148cb5e4d05aa3cac1a40c30519bda3"
+dependencies = [
+ "chlorine",
 ]
 
 [[package]]
@@ -66,6 +99,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "rusty_chip_8"
+version = "0.1.0"
+dependencies = [
+ "fermium",
+ "gl33",
+ "rand",
 ]
 
 [[package]]

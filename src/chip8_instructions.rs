@@ -133,7 +133,7 @@ pub fn exec(ins: u16, device: &mut Chip8){
     print!("{:.16?} | {:#04x?} | {:#04x?} | {:#016b} | ", itype, device.pc, ins, ins);
     // println!("{:#04x?} | {:#016b} {:#04x?} | {:.16?}", device.pc, ins, ins, itype);
     match itype {
-        CH8_INSTRUCTION::SYS => { sys(device, ins); },
+        CH8_INSTRUCTION::SYS => {},
         CH8_INSTRUCTION::CLS => { cls(device, ins); },
         CH8_INSTRUCTION::RET => { ret(device, ins); },
         CH8_INSTRUCTION::JP => { jp(device, ins); },
@@ -172,15 +172,6 @@ pub fn exec(ins: u16, device: &mut Chip8){
     }
     println!();
     return;
-}
-
-/**
-* 0nnn - SYS addr
-* Jump to a machine code routine at nnn.
-*This instruction is only used on the old computers on which Chip-8 was originally implemented. It is ignored by modern interpreters.
-**/
-fn sys(device: &mut Chip8, ins: u16) {
-    // Do nothing
 }
 
 /*
@@ -524,7 +515,6 @@ fn drw(device: &mut Chip8, ins: u16) {
         for b in 0..8 {
             if sprite_byte & (0b10000000 >> b) > 0 {
                 xored &= xor_px_at(device.display.borrow_mut(), x+b, y+i);
-                println!("PX at : {} | {}", x+b, y+i);
             }
         }
     }
@@ -534,8 +524,6 @@ fn drw(device: &mut Chip8, ins: u16) {
     }else{
         device.vf = 0;
     }
-
-    print_display(device);
 
 }
 
