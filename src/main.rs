@@ -39,8 +39,6 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 fn main() {
     let mut device = chip8::build_chip8();
     load_program(device.borrow_mut(), "./resources/IBM");
-    println!();
-    println!("PRG START");
 
     unsafe {
         assert_eq!(SDL_Init(SDL_INIT_EVERYTHING), 0);
@@ -76,9 +74,10 @@ fn main() {
             SDL_RenderClear(renderer);
             render_chip8_display(renderer, &device);
             SDL_RenderPresent(renderer);
-            SDL_Delay(25);
 
-            for b in 0..100 { // runs 100 chip8 instructions per SDL frame
+            // runs ~540 ops/s (540hz cpu speed)
+            SDL_Delay(25); // 40 FPS cap
+            for b in 0..14 {
                 step(device.borrow_mut());
             }
         }
