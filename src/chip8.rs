@@ -11,6 +11,7 @@ use crate::chip8_display::{SPRITE_0, DEFAULT_SPRITE};
 pub const REGISTER_COUNT: usize = 16;
 pub const STACK_SIZE: usize = 16;
 pub const KEYBOARD_SIZE: usize = 16;
+pub const CLOCK_SPEED: u16 = 540;
 
 pub struct Chip8{
 
@@ -38,11 +39,20 @@ pub struct Chip8{
     // Keyboard
     pub(crate) keyboard: [bool; KEYBOARD_SIZE],
 
+    // Last pressed key
+    pub(crate) key: usize,
+
+    // Program counter
     pub(crate) pc: u16,
 
+    // Stack pointer
     pub(crate) sp: u8,
 
-    pub(crate) stack: [u16; STACK_SIZE]
+    // Stack
+    pub(crate) stack: [u16; STACK_SIZE],
+
+    // Cycle
+    pub(crate) cycle: u16,
 
 }
 
@@ -59,9 +69,11 @@ pub fn build_chip8() -> Chip8{
         i: 0,
         display: chip8_display::build_chip8_display(),
         keyboard: [false; KEYBOARD_SIZE],
+        key: KEYBOARD_SIZE + 1,
         pc: chip8_memory::START_PRG as u16,
         sp: 0,
-        stack: [0; STACK_SIZE]
+        stack: [0; STACK_SIZE],
+        cycle: 0
     };
     load_default_sprites(device.borrow_mut());
     return device;
@@ -94,6 +106,12 @@ pub fn step(device: &mut Chip8){
     let instruction:u16 = (device.memory[(device.pc+ 1) as usize] as u16) + (device.memory[device.pc as usize] as u16).shl(8);
     exec(instruction, device);
     device.pc = device.pc + 2;
+    if device.cycle >= CLOCK_SPEED{
+        device.cycle = 0;
+        if device.dt > 0{
+            device.dt -= 1;
+        }
+    }
 }
 
 /**

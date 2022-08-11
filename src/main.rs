@@ -2,7 +2,7 @@
 #![allow(clippy::single_match)]
 
 use crate::debug_utils::{print_registers, print_display, print_memory, print_keyboard};
-use crate::chip8::{load_program, step};
+use crate::chip8::{load_program, step, KEYBOARD_SIZE};
 use std::borrow::{Borrow, BorrowMut};
 use std::{time, thread};
 use std::thread::sleep;
@@ -40,7 +40,7 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    load_program(device.borrow_mut(), "./resources/MERLIN");
+    load_program(device.borrow_mut(), "./resources/MAZE");
 
     unsafe {
         assert_eq!(SDL_Init(SDL_INIT_EVERYTHING), 0);
@@ -94,6 +94,7 @@ fn main() {
             for b in 0..14 {
                 step(device.borrow_mut());
             }
+            device.key = KEYBOARD_SIZE + 1;
         }
 
         SDL_DestroyWindow(window);

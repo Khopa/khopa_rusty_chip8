@@ -1,5 +1,5 @@
 extern crate rand;
-use crate::chip8::Chip8;
+use crate::chip8::{Chip8, KEYBOARD_SIZE};
 use crate::chip8_display;
 use crate::chip8_display::{DISPLAY_HEIGHT, DISPLAY_WIDTH, xor_px_at};
 
@@ -154,13 +154,13 @@ pub fn exec(ins: u16, device: &mut Chip8){
         CH8_INSTRUCTION::SHL => { shl(device, ins); },
         CH8_INSTRUCTION::SNEVxVy => { snevxvy(device, ins); },
         CH8_INSTRUCTION::LDIaddr => { ldi(device, ins); },
-        CH8_INSTRUCTION::JPV0addr => {},
+        CH8_INSTRUCTION::JPV0addr => { jpv0addr(device, ins); },
         CH8_INSTRUCTION::RND => { rnd(device, ins); },
         CH8_INSTRUCTION::DRW => { drw(device, ins); },
-        CH8_INSTRUCTION::SKPVx => { },
-        CH8_INSTRUCTION::SKNPVx => {},
+        CH8_INSTRUCTION::SKPVx => { skpvx(device, ins); },
+        CH8_INSTRUCTION::SKNPVx => { sknpvx(device, ins);},
         CH8_INSTRUCTION::LDVxDT => { ldvxdt(device, ins); },
-        CH8_INSTRUCTION::LDVxK => {},
+        CH8_INSTRUCTION::LDVxK => { ldvxk(device, ins)},
         CH8_INSTRUCTION::LDDTVx => { lddtvx(device, ins); },
         CH8_INSTRUCTION::LDSTVx => { ldstvx(device, ins); },
         CH8_INSTRUCTION::ADDIVx => { addivx(device, ins); },
@@ -230,9 +230,9 @@ Skip next instruction if Vx = kk.
 The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
 */
 fn se(device: &mut Chip8, ins: u16) {
-    let register:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
-    if device.vn[register] == byte {
+    if device.vn[x] == byte {
         device.pc += 2;
     }
 }
@@ -244,9 +244,9 @@ Skip next instruction if Vx != kk.
 The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
 */
 fn sne(device: &mut Chip8, ins: u16) {
-    let register:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = (ins & 0x0F00 >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
-    if device.vn[register] != byte {
+    if device.vn[x] != byte {
         device.pc += 2;
     }
 }
@@ -534,6 +534,12 @@ Skip next instruction if key with the value of Vx is pressed.
 
 Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
 */
+fn skpvx(device: &mut Chip8, ins: u16) {
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    if device.keyboard[device.vn[x] as usize]{
+        device.pc += 2;
+    }
+}
 
 /*
 ExA1 - SKNP Vx
@@ -541,6 +547,12 @@ Skip next instruction if key with the value of Vx is not pressed.
 
 Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
 */
+fn sknpvx(device: &mut Chip8, ins: u16) {
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
+    if device.keyboard[device.vn[x] as usize] == false{
+        device.pc += 2;
+    }
+}
 
 /*
 Fx07 - LD Vx, DT
@@ -559,6 +571,14 @@ Wait for a key press, store the value of the key in Vx.
 
 All execution stops until a key is pressed, then the value of that key is stored in Vx.
 */
+fn ldvxk(device: &mut Chip8, ins: u16) {
+    if device.key < KEYBOARD_SIZE {
+        device.vf = device.key as u8;
+    }else{
+        // force to loop on current ins
+        device.pc -= 2;
+    }
+}
 
 /*
 Fx15 - LD DT, Vx
@@ -608,7 +628,6 @@ fn ldfvx(device: &mut Chip8, ins: u16) {
     if value <= 15{
         device.i = (5 * value) as u16;
     }
-
 }
 
 /*
