@@ -40,7 +40,7 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    load_program(device.borrow_mut(), "./resources/MAZE");
+    load_program(device.borrow_mut(), "./resources/IBM");
 
     unsafe {
         assert_eq!(SDL_Init(SDL_INIT_EVERYTHING), 0);
@@ -95,6 +95,8 @@ fn main() {
                 step(device.borrow_mut());
             }
             device.key = KEYBOARD_SIZE + 1;
+
+            print_display(&device);
         }
 
         SDL_DestroyWindow(window);

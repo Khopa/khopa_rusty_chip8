@@ -21,9 +21,6 @@ pub struct Chip8{
     // General Purpose Registers
     pub(crate) vn: [u8; REGISTER_COUNT],
 
-    // Flag/Carry register
-    pub(crate) vf: u8,
-
     // Delay Registers
     pub(crate) dt: u8,
 
@@ -63,7 +60,6 @@ pub fn build_chip8() -> Chip8{
     let mut device = Chip8{
         memory: [0; chip8_memory::END_MEM],
         vn: [0; REGISTER_COUNT],
-        vf: 0,
         dt: 0,
         st: 0,
         i: 0,
@@ -105,8 +101,7 @@ fn load_sprite_at(device: &mut Chip8, address: usize, sprite: [u8; 5]){
 pub fn step(device: &mut Chip8){
     let instruction:u16 = (device.memory[(device.pc+ 1) as usize] as u16) + (device.memory[device.pc as usize] as u16).shl(8);
     exec(instruction, device);
-    device.pc = device.pc + 2;
-    if device.cycle >= CLOCK_SPEED{
+    if device.cycle >= CLOCK_SPEED/60{
         device.cycle = 0;
         if device.dt > 0{
             device.dt -= 1;

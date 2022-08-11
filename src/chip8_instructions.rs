@@ -184,6 +184,7 @@ fn cls(device: &mut Chip8, ins: u16) {
             device.display.display_data[i][j] = 0x00;
         }
     }
+    device.pc += 2;
 }
 
 /*
@@ -193,9 +194,9 @@ Return from a subroutine.
 The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
 */
 fn ret(device: &mut Chip8, ins: u16) {
-    let nnn:u16 = ins & 0x0FFF;
-    device.pc = device.stack[device.sp as usize];
     device.sp = device.sp - 1;
+    device.pc = device.stack[device.sp as usize];
+    device.pc += 2;
 }
 
 /*
@@ -207,7 +208,7 @@ The interpreter sets the program counter to nnn.
 fn jp(device: &mut Chip8, ins: u16) {
     let nnn:u16 = ins & 0x0FFF;
     print!(" to {:#4x?}", nnn);
-    device.pc = nnn - 2;
+    device.pc = nnn;
 }
 
 /*
@@ -218,9 +219,9 @@ The interpreter increments the stack pointer, then puts the current PC on the to
 */
 fn call(device: &mut Chip8, ins: u16) {
     let nnn:u16 = ins & 0x0FFF;
-    device.sp = device.sp + 1;
     device.stack[device.sp as usize] = device.pc;
-    device.pc = nnn - 2;
+    device.sp = device.sp + 1;
+    device.pc = nnn;
 }
 
 /*
@@ -233,6 +234,8 @@ fn se(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
     if device.vn[x] == byte {
+        device.pc += 4;
+    }else{
         device.pc += 2;
     }
 }
@@ -247,6 +250,8 @@ fn sne(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
     if device.vn[x] != byte {
+        device.pc += 4;
+    }else{
         device.pc += 2;
     }
 }
@@ -261,6 +266,8 @@ fn sevxvy(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
     if device.vn[x] == device.vn[y] {
+        device.pc += 4;
+    }else{
         device.pc += 2;
     }
 }
@@ -275,7 +282,7 @@ fn ldvxb(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let byte:u8  = (ins & 0x00FF) as u8;
     device.vn[x] = byte;
-    print!("LD V[{}] {}", x, byte)
+    device.pc += 2;
 }
 
 /*
@@ -288,6 +295,7 @@ fn addvxb(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
     device.vn[x] = device.vn[x].saturating_add(byte);
+    device.pc += 2;
 }
 
 
@@ -301,6 +309,7 @@ fn ldvxvy(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
     device.vn[x] = device.vn[y];
+    device.pc += 2;
 }
 
 
@@ -314,6 +323,7 @@ fn or(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
     device.vn[x] = device.vn[x] | device.vn[y];
+    device.pc += 2;
 }
 
 
@@ -328,6 +338,7 @@ fn and(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
     device.vn[x] = device.vn[x] & device.vn[y];
+    device.pc += 2;
 }
 
 /*
@@ -341,6 +352,7 @@ fn xor(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
     device.vn[x] = device.vn[x] ^ device.vn[y];
+    device.pc += 2;
 }
 
 /*
@@ -354,8 +366,9 @@ fn addvxvy(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
     let result:u16 = (device.vn[x] as u16) + (device.vn[y] as u16);
-    if result > 0xFF { device.vf = 1; } else { device.vf = 0; };
+    if result > 0xFF { device.vn[0xF] = 1; } else { device.vn[0xF] = 0; };
     device.vn[x] = (result & 0x00FF) as u8;
+    device.pc += 2;
 }
 
 /*
@@ -368,8 +381,10 @@ fn subvxvy(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
 
-    if device.vn[x] > device.vn[y] { device.vf = 1;} else { device.vf = 0; }
-    device.vn[x] = device.vn[x] - device.vn[y]
+    if device.vn[x] > device.vn[y] { device.vn[0xF] = 1;} else { device.vn[0xF] = 0; }
+    device.vn[x] = device.vn[x] - device.vn[y];
+
+    device.pc += 2;
 }
 
 /*
@@ -386,8 +401,10 @@ fn shr(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
 
-    device.vf = device.vn[y]&0x01;
-    device.vn[x] = device.vn[y].wrapping_shr(1);
+    device.vn[0xF] = device.vn[y]&0x01;
+    device.vn[x] = device.vn[y] >> 1;
+
+    device.pc += 2;
 }
 
 /*
@@ -406,12 +423,14 @@ fn subnvxvy(device: &mut Chip8, ins: u16) {
     let y: usize = (ins & 0x00F0 >> 4) as usize;
 
     if device.vn[y] > device.vn[x] {
-        device.vf = 1;
+        device.vn[0xF] = 1;
         device.vn[x] = device.vn[y] - device.vn[x];
     } else {
-        device.vf = 0;
+        device.vn[0xF] = 0;
         device.vn[x] = 0;
     }
+
+    device.pc += 2;
 
 }
 
@@ -431,8 +450,10 @@ fn shl(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
 
-    device.vf = device.vn[y]&0x80 >> 7;
+    device.vn[0xF] = device.vn[y]&0x80 >> 7;
     device.vn[x] = device.vn[y].wrapping_shl(1);
+
+    device.pc += 2;
 }
 
 /*
@@ -446,7 +467,9 @@ fn snevxvy(device: &mut Chip8, ins: u16) {
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
 
     if device.vn[x] != device.vn[y] {
-        device.pc = device.pc + 2;
+        device.pc += 4;
+    }else{
+        device.pc += 2;
     }
 }
 
@@ -459,6 +482,7 @@ The value of register I is set to nnn.
 fn ldi(device: &mut Chip8, ins: u16) {
     let nnn: u16 = ins & 0x0FFF;
     device.i = nnn;
+    device.pc += 2;
 }
 
 /*
@@ -481,9 +505,9 @@ The interpreter generates a random number from 0 to 255, which is then ANDed wit
 fn rnd(device: &mut Chip8, ins: u16) {
     let x:usize = (ins & 0x0F00 >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
-    let rand = rand::thread_rng().gen_range(0..255);
-    device.vn[x] = rand & byte;
-    print!(" -> {}", rand);
+    let rng = rand::thread_rng().gen_range(0..255);
+    device.vn[x] = rng & byte;
+    device.pc += 2;
 }
 
 
@@ -510,21 +534,22 @@ fn drw(device: &mut Chip8, ins: u16) {
     let n:usize = (ins & 0x000F) as usize;
     let mut xored: bool = false;
 
-    for i in 0..n{
-        let sprite_byte = device.memory[(device.i as usize).saturating_add(i as usize)];
+    for j in 0..n{
+        let sprite_byte = device.memory[(device.i as usize).saturating_add(j as usize)];
         for b in 0..8 {
-            if sprite_byte & (0b10000000 >> b) > 0 {
-                xored &= xor_px_at(device.display.borrow_mut(), x+b, y+i);
+            if (sprite_byte & (0x80 >> b)) != 0 {
+                xored &= xor_px_at(device.display.borrow_mut(), x+b, y+j);
             }
         }
     }
 
     if xored {
-        device.vf = 1;
+        device.vn[0xF] = 1;
     }else{
-        device.vf = 0;
+        device.vn[0xF] = 0;
     }
 
+    device.pc += 2;
 }
 
 
@@ -537,6 +562,8 @@ Checks the keyboard, and if the key corresponding to the value of Vx is currentl
 fn skpvx(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     if device.keyboard[device.vn[x] as usize]{
+        device.pc += 4;
+    }else{
         device.pc += 2;
     }
 }
@@ -550,6 +577,8 @@ Checks the keyboard, and if the key corresponding to the value of Vx is currentl
 fn sknpvx(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     if device.keyboard[device.vn[x] as usize] == false{
+        device.pc += 4;
+    }else{
         device.pc += 2;
     }
 }
@@ -563,6 +592,7 @@ The value of DT is placed into Vx.
 fn ldvxdt(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     device.vn[x] = device.dt;
+    device.pc += 2;
 }
 
 /*
@@ -573,11 +603,12 @@ All execution stops until a key is pressed, then the value of that key is stored
 */
 fn ldvxk(device: &mut Chip8, ins: u16) {
     if device.key < KEYBOARD_SIZE {
-        device.vf = device.key as u8;
+        device.vn[0xF] = device.key as u8;
     }else{
         // force to loop on current ins
         device.pc -= 2;
     }
+    device.pc += 2;
 }
 
 /*
@@ -589,6 +620,7 @@ DT is set equal to the value of Vx.
 fn lddtvx(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     device.dt = device.vn[x];
+    device.pc += 2;
 }
 
 
@@ -601,6 +633,7 @@ ST is set equal to the value of Vx.
 fn ldstvx(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     device.st = device.vn[x];
+    device.pc += 2;
 }
 
 /*
@@ -612,6 +645,7 @@ The values of I and Vx are added, and the results are stored in I.
 fn addivx(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     device.i = device.i + (device.vn[x] as u16);
+    device.pc += 2;
 }
 
 
@@ -628,6 +662,7 @@ fn ldfvx(device: &mut Chip8, ins: u16) {
     if value <= 15{
         device.i = (5 * value) as u16;
     }
+    device.pc += 2;
 }
 
 /*
@@ -641,8 +676,10 @@ fn ldbvx(device: &mut Chip8, ins: u16) {
 
     let number = device.vn[x];
     device.memory[device.i as usize] = number/100;
-    device.memory[device.i as usize + 1] = (number-(number/100)*100)/10;
-    device.memory[device.i as usize + 2] = number - ((number-(number/100)*100)/10)*10 - (number/100)*100;
+    device.memory[device.i as usize + 1] = (number/10)%10;
+    device.memory[device.i as usize + 2] = number%10;
+
+    device.pc += 2;
 }
 
 /*
@@ -656,6 +693,8 @@ fn ldivx(device: &mut Chip8, ins: u16) {
     for n in 0..x{
         device.memory[device.i as usize + (n as usize)] = device.vn[n];
     }
+    device.i = device.i + (x as u16) + 1;
+    device.pc += 2;
 }
 
 /*
@@ -669,4 +708,6 @@ fn ldvxii(device: &mut Chip8, ins: u16) {
     for n in 0..x{
         device.vn[n] = device.memory[device.i as usize + (n as usize)];
     }
+    device.i = device.i + (x as u16) + 1;
+    device.pc += 2;
 }
