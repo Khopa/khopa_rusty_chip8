@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![allow(clippy::single_match)]
 
-use crate::debug_utils::{print_registers, print_display, print_memory};
+use crate::debug_utils::{print_registers, print_display, print_memory, print_keyboard};
 use crate::chip8::{load_program, step};
 use std::borrow::{Borrow, BorrowMut};
 use std::{time, thread};
@@ -13,6 +13,7 @@ mod chip8_display;
 mod chip8_memory;
 mod debug_utils;
 mod chip8_instructions;
+mod chip8_keyboard_utils;
 
 use fermium::{
     prelude::*,
@@ -20,6 +21,7 @@ use fermium::{
 };
 use fermium::renderer::SDL_RenderDrawRect;
 use fermium::prelude::{SDL_Rect, SDL_RenderDrawRectF};
+use crate::chip8_keyboard_utils::on_keyboard_event;
 
 
 unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip8) {
@@ -38,11 +40,10 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    load_program(device.borrow_mut(), "./resources/IBM");
+    load_program(device.borrow_mut(), "./resources/MERLIN");
 
     unsafe {
         assert_eq!(SDL_Init(SDL_INIT_EVERYTHING), 0);
-
         let window = SDL_CreateWindow(
             b"Khopa's Rusty Chip 8 Emulator\0".as_ptr().cast(),
             SDL_WINDOWPOS_CENTERED,
@@ -61,14 +62,27 @@ fn main() {
 
         let mut event = SDL_Event::default();
         loop {
-            assert_eq!(SDL_WaitEvent(&mut event), 1);
-            match event.type_ {
-              SDL_QUIT => {
-                println!("SDL_QUIT");
-                break;
-              }
-              _ => (),
+
+            let mut should_exit = false;
+            while SDL_PollEvent(&mut event) > 0 {
+                match event.type_ {
+                    SDL_QUIT => {
+                        should_exit = true;
+                    }
+                    SDL_KEYUP => {
+                        on_keyboard_event(&mut device, event.key.keysym.scancode, false);
+                    }
+                    SDL_KEYDOWN => {
+                        on_keyboard_event(&mut device, event.key.keysym.scancode, true);
+                    }
+                    _ => (),
+                }
             }
+
+            if(should_exit){
+                break;
+            }
+
 
             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             SDL_RenderClear(renderer);

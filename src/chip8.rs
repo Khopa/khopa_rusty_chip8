@@ -10,6 +10,7 @@ use crate::chip8_display::{SPRITE_0, DEFAULT_SPRITE};
 
 pub const REGISTER_COUNT: usize = 16;
 pub const STACK_SIZE: usize = 16;
+pub const KEYBOARD_SIZE: usize = 16;
 
 pub struct Chip8{
 
@@ -34,6 +35,9 @@ pub struct Chip8{
     // Display
     pub(crate) display: chip8_display::Chip8Display,
 
+    // Keyboard
+    pub(crate) keyboard: [bool; KEYBOARD_SIZE],
+
     pub(crate) pc: u16,
 
     pub(crate) sp: u8,
@@ -54,6 +58,7 @@ pub fn build_chip8() -> Chip8{
         st: 0,
         i: 0,
         display: chip8_display::build_chip8_display(),
+        keyboard: [false; KEYBOARD_SIZE],
         pc: chip8_memory::START_PRG as u16,
         sp: 0,
         stack: [0; STACK_SIZE]

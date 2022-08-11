@@ -4,6 +4,7 @@ use crate::chip8_display::Chip8Display;
 use crate::chip8_memory;
 use crate::chip8_memory::END_MEM;
 use std::ops::Sub;
+use crate::chip8::KEYBOARD_SIZE;
 
 /**
  * Display the registers in console
@@ -33,6 +34,20 @@ pub fn print_display(device: &chip8::Chip8) {
         }
         println!("|");
     }
+}
+
+/**
+ * Display the Chip 8 screen in the console
+ */
+pub fn print_keyboard(device: &chip8::Chip8) {
+    for i in 0..KEYBOARD_SIZE {
+        if device.keyboard[i]{
+            print!("{}", "⬛");
+        } else {
+            print!("{}", "⬜");
+        }
+    }
+    println!("|")
 }
 
 /**
