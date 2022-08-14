@@ -25,14 +25,16 @@ use crate::chip8_keyboard_utils::on_keyboard_event;
 
 
 unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip8) {
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     for i in 0..chip8_display::DISPLAY_HEIGHT {
         for j in 0..chip8_display::DISPLAY_WIDTH / 8 {
             for b in 0..8 {
                 let rect = SDL_Rect { x: ((j as i32) * 8 + b) * 10, y: (i as i32) * 10, w: 10, h: 10 };
                 if device.display.display_data[i][j] & (0b10000000 >> b) > 0 {
-                    SDL_RenderDrawRect(renderer, &rect);
+                    SDL_SetRenderDrawColor(renderer, 90, 190, 90, 255);
+                    SDL_RenderFillRect(renderer, &rect);
                 }
+                SDL_SetRenderDrawColor(renderer, 14, 48, 68, 255);
+                SDL_RenderDrawRect(renderer, &rect);
             }
         }
     }
@@ -40,7 +42,7 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    load_program(device.borrow_mut(), "./resources/IBM");
+    load_program(device.borrow_mut(), "./resources/INVADERS");
 
     unsafe {
         assert_eq!(SDL_Init(SDL_INIT_EVERYTHING), 0);
@@ -84,7 +86,7 @@ fn main() {
             }
 
 
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            SDL_SetRenderDrawColor(renderer, 7, 38, 54, 255);
             SDL_RenderClear(renderer);
             render_chip8_display(renderer, &device);
             SDL_RenderPresent(renderer);
@@ -93,10 +95,10 @@ fn main() {
             SDL_Delay(25); // 40 FPS cap
             for b in 0..14 {
                 step(device.borrow_mut());
+                print_registers(&device);
             }
             device.key = KEYBOARD_SIZE + 1;
 
-            print_display(&device);
         }
 
         SDL_DestroyWindow(window);

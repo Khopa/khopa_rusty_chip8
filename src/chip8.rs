@@ -107,6 +107,7 @@ pub fn step(device: &mut Chip8){
             device.dt -= 1;
         }
     }
+    device.cycle += 1;
 }
 
 /**

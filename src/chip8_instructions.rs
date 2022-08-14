@@ -76,6 +76,8 @@ pub fn get_instruction_type(ins: u16) -> CH8_INSTRUCTION {
         return CH8_INSTRUCTION::LDVxbyte;
     } else if ins & 0xF000 == 0x7000 {
         return CH8_INSTRUCTION::ADDVxbyte;
+    } else if ins & 0xF00F == 0x8000 {
+        return CH8_INSTRUCTION::LDVxVy;
     } else if ins & 0xF00F == 0x8001 {
         return CH8_INSTRUCTION::OR;
     } else if ins & 0xF00F == 0x8002 {
@@ -122,7 +124,7 @@ pub fn get_instruction_type(ins: u16) -> CH8_INSTRUCTION {
         return CH8_INSTRUCTION::LDBVx;
     } else if ins & 0xF0FF == 0xF055 {
         return CH8_INSTRUCTION::LDIVx;
-    } else if ins & 0xF0FF == 0xF055 {
+    } else if ins & 0xF0FF == 0xF065 {
         return CH8_INSTRUCTION::LDVxI;
     }
     return CH8_INSTRUCTION::NOOP;
@@ -187,6 +189,7 @@ fn cls(device: &mut Chip8, ins: u16) {
     device.pc += 2;
 }
 
+
 /*
 00EE - RET
 Return from a subroutine.
@@ -231,8 +234,9 @@ Skip next instruction if Vx = kk.
 The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
 */
 fn se(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
+    println!("x = {}, vx = {}, byte = {}", x, device.vn[x], byte);
     if device.vn[x] == byte {
         device.pc += 4;
     }else{
@@ -247,7 +251,7 @@ Skip next instruction if Vx != kk.
 The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
 */
 fn sne(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
     if device.vn[x] != byte {
         device.pc += 4;
@@ -294,7 +298,10 @@ Adds the value kk to the value of register Vx, then stores the result in Vx.
 fn addvxb(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let byte:u8 = (ins & 0x00FF) as u8;
-    device.vn[x] = device.vn[x].saturating_add(byte);
+
+    println!("x = {}, vx = {}, byte = {}", x, device.vn[x], byte);
+    device.vn[x] = device.vn[x].wrapping_add(byte);
+    println!("vx = vx + byte = {}", device.vn[x]);
     device.pc += 2;
 }
 
@@ -367,7 +374,7 @@ fn addvxvy(device: &mut Chip8, ins: u16) {
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
     let result:u16 = (device.vn[x] as u16) + (device.vn[y] as u16);
     if result > 0xFF { device.vn[0xF] = 1; } else { device.vn[0xF] = 0; };
-    device.vn[x] = (result & 0x00FF) as u8;
+    device.vn[x] = device.vn[x].wrapping_add(device.vn[y]);
     device.pc += 2;
 }
 
@@ -380,10 +387,8 @@ If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and
 fn subvxvy(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let y:usize = ((ins & 0x00F0) >> 4) as usize;
-
     if device.vn[x] > device.vn[y] { device.vn[0xF] = 1;} else { device.vn[0xF] = 0; }
-    device.vn[x] = device.vn[x] - device.vn[y];
-
+    device.vn[x] = device.vn[x].wrapping_sub(device.vn[y]);
     device.pc += 2;
 }
 
@@ -399,11 +404,8 @@ VY is unchanged
 */
 fn shr(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
-    let y:usize = ((ins & 0x00F0) >> 4) as usize;
-
-    device.vn[0xF] = device.vn[y]&0x01;
-    device.vn[x] = device.vn[y] >> 1;
-
+    device.vn[0xF] = device.vn[x]&0x01;
+    device.vn[x] = device.vn[x] >> 1;
     device.pc += 2;
 }
 
@@ -424,12 +426,10 @@ fn subnvxvy(device: &mut Chip8, ins: u16) {
 
     if device.vn[y] > device.vn[x] {
         device.vn[0xF] = 1;
-        device.vn[x] = device.vn[y] - device.vn[x];
     } else {
         device.vn[0xF] = 0;
-        device.vn[x] = 0;
     }
-
+    device.vn[x] = device.vn[y].wrapping_sub(device.vn[x]);
     device.pc += 2;
 
 }
@@ -448,11 +448,8 @@ VY is unchanged
 */
 fn shl(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
-    let y:usize = ((ins & 0x00F0) >> 4) as usize;
-
-    device.vn[0xF] = device.vn[y]&0x80 >> 7;
-    device.vn[x] = device.vn[y].wrapping_shl(1);
-
+    device.vn[0xF] = (device.vn[x] >> 7)&0x01;
+    device.vn[x] = device.vn[x] << 1;
     device.pc += 2;
 }
 
@@ -503,10 +500,11 @@ Set Vx = random byte AND kk.
 The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
 */
 fn rnd(device: &mut Chip8, ins: u16) {
-    let x:usize = (ins & 0x0F00 >> 8) as usize;
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     let byte = (ins & 0x00FF) as u8;
     let rng = rand::thread_rng().gen_range(0..255);
     device.vn[x] = rng & byte;
+    println!("x = {}, vx = {}, byte = {}, rnd = {}", x, device.vn[x], byte, rng);
     device.pc += 2;
 }
 
@@ -690,7 +688,8 @@ The interpreter copies the values of registers V0 through Vx into memory, starti
 */
 fn ldivx(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
-    for n in 0..x{
+    for n in 0..x+1{
+        println!("i = {}, n = {} x={}", device.i, n, x);
         device.memory[device.i as usize + (n as usize)] = device.vn[n];
     }
     device.i = device.i + (x as u16) + 1;
@@ -705,7 +704,7 @@ The interpreter reads values from memory starting at location I into registers V
 */
 fn ldvxii(device: &mut Chip8, ins: u16) {
     let x:usize = ((ins & 0x0F00) >> 8) as usize;
-    for n in 0..x{
+    for n in 0..x+1{
         device.vn[n] = device.memory[device.i as usize + (n as usize)];
     }
     device.i = device.i + (x as u16) + 1;
