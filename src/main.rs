@@ -42,11 +42,15 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    load_program(device.borrow_mut(), "./resources/INVADERS");
+    load_program(device.borrow_mut(), "./resources/KALEID");
+
+    let mut window;
+    let mut renderer;
+    let mut event = SDL_Event::default();
 
     unsafe {
         assert_eq!(SDL_Init(SDL_INIT_EVERYTHING), 0);
-        let window = SDL_CreateWindow(
+        window = SDL_CreateWindow(
             b"Khopa's Rusty Chip 8 Emulator\0".as_ptr().cast(),
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
@@ -57,15 +61,17 @@ fn main() {
         // Panic if window is not null
         assert!(!window.is_null());
 
-        let renderer = SDL_CreateRenderer(window, -1, 1);
+        renderer = SDL_CreateRenderer(window, -1, 1);
         // Panic if renderer is not null
         assert!(!renderer.is_null());
         SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+    }
 
-        let mut event = SDL_Event::default();
-        loop {
+    loop {
 
-            let mut should_exit = false;
+        let mut should_exit = false;
+
+        unsafe {
             while SDL_PollEvent(&mut event) > 0 {
                 match event.type_ {
                     SDL_QUIT => {
@@ -80,27 +86,31 @@ fn main() {
                     _ => (),
                 }
             }
+        }
 
-            if(should_exit){
-                break;
-            }
+        if(should_exit){
+            break;
+        }
 
-
+        unsafe {
             SDL_SetRenderDrawColor(renderer, 7, 38, 54, 255);
             SDL_RenderClear(renderer);
             render_chip8_display(renderer, &device);
             SDL_RenderPresent(renderer);
-
             // runs ~540 ops/s (540hz cpu speed)
             SDL_Delay(25); // 40 FPS cap
-            for b in 0..14 {
-                step(device.borrow_mut());
-                print_registers(&device);
-            }
-            device.key = KEYBOARD_SIZE + 1;
-
         }
 
+        for b in 0..14 {
+            step(device.borrow_mut());
+            print_registers(&device);
+        }
+
+        device.key = KEYBOARD_SIZE + 1;
+
+    }
+
+    unsafe{
         SDL_DestroyWindow(window);
         SDL_Quit();
     }
