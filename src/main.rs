@@ -42,7 +42,9 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    load_program(device.borrow_mut(), "./resources/FRAMEDMK2");
+    let rom = "./resources/FRAMEDMK2";
+
+    load_program(device.borrow_mut(), rom);
 
     let mut window;
     let mut renderer;
@@ -101,7 +103,11 @@ fn main() {
             SDL_Delay(25); // 40 FPS cap
         }
 
-        for b in 0..14 {
+        let mut speed = 14;
+        if device.turbo{
+            speed = 140;
+        }
+        for b in 0..speed {
             step(device.borrow_mut());
             //print_registers(&device);
         }

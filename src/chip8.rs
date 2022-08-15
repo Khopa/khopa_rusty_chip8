@@ -51,6 +51,8 @@ pub struct Chip8{
     // Cycle
     pub(crate) cycle: u16,
 
+    pub(crate) turbo: bool,
+
 }
 
 /**
@@ -69,7 +71,8 @@ pub fn build_chip8() -> Chip8{
         pc: chip8_memory::START_PRG as u16,
         sp: 0,
         stack: [0; STACK_SIZE],
-        cycle: 0
+        cycle: 0,
+        turbo: false
     };
     load_default_sprites(device.borrow_mut());
     return device;

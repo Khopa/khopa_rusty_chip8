@@ -71,6 +71,9 @@ pub fn on_keyboard_event(device: &mut Chip8, keycode: SDL_Scancode, down: bool) 
             device.keyboard[0xF] = down;
             if down { device.key = 0xF; }
         }
+        SDL_SCANCODE_T => {
+            device.turbo = down;
+        }
         _ => ()
     }
 }
