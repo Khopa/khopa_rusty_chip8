@@ -9,4 +9,5 @@ edition = "2018"
 [dependencies]
 rand = "0.8.4"
 rodio = "0.15.0"
+clap = { version = "3.2.17", features = ["derive"] }
 fermium = { version = "20014", features = ["experimental_fast_build"] }

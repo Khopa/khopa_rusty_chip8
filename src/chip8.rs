@@ -125,7 +125,7 @@ pub fn load_program(device: &mut Chip8, path: &str) -> bool{
     let mut file = match file {
         Ok(file) => file,
         Err(e) => {
-            return false;
+            panic!("Error : not a valid ROM file");
         }
     };
 

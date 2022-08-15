@@ -1,12 +1,25 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 #![allow(clippy::single_match)]
 
-use crate::debug_utils::{print_registers, print_display, print_memory, print_keyboard};
-use crate::chip8::{load_program, step, KEYBOARD_SIZE};
+use std::{env, thread, time};
 use std::borrow::{Borrow, BorrowMut};
-use std::{time, thread};
-use std::thread::sleep;
 use std::convert::TryInto;
+use std::thread::sleep;
+use std::time::Duration;
+
+use clap::Parser;
+use fermium::{
+    *,
+    error::*, events::*, prelude::*, video::*,
+};
+use fermium::prelude::{SDL_Rect, SDL_RenderDrawRectF};
+use fermium::renderer::SDL_RenderDrawRect;
+use rodio::{Decoder, OutputStream, Sink};
+use rodio::source::{SineWave, Source};
+
+use crate::chip8::{KEYBOARD_SIZE, load_program, step};
+use crate::chip8_keyboard_utils::on_keyboard_event;
+use crate::debug_utils::{print_display, print_keyboard, print_memory, print_registers};
 
 mod chip8;
 mod chip8_display;
@@ -14,17 +27,6 @@ mod chip8_memory;
 mod debug_utils;
 mod chip8_instructions;
 mod chip8_keyboard_utils;
-
-use fermium::{
-    prelude::*,
-    error::*, events::*, video::*, *,
-};
-use fermium::renderer::SDL_RenderDrawRect;
-use fermium::prelude::{SDL_Rect, SDL_RenderDrawRectF};
-use crate::chip8_keyboard_utils::on_keyboard_event;
-use rodio::{Decoder, OutputStream, Sink};
-use rodio::source::{SineWave, Source};
-use std::time::Duration;
 
 unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip8) {
     for i in 0..chip8_display::DISPLAY_HEIGHT {
@@ -42,11 +44,20 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
     }
 }
 
-fn main() {
-    let mut device = chip8::build_chip8();
-    let rom = "./resources/PONG2";
+/// Chip 8 Emulator
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+   /// Rom file to load
+   #[clap(short, long, value_parser)]
+   filename: String,
+}
 
-    load_program(device.borrow_mut(), rom);
+fn main() {
+    let args = Args::parse();
+
+    let mut device = chip8::build_chip8();
+    load_program(device.borrow_mut(), &args.filename);
 
     let mut window;
     let mut renderer;
