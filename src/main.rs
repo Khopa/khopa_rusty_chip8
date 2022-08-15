@@ -22,7 +22,9 @@ use fermium::{
 use fermium::renderer::SDL_RenderDrawRect;
 use fermium::prelude::{SDL_Rect, SDL_RenderDrawRectF};
 use crate::chip8_keyboard_utils::on_keyboard_event;
-
+use rodio::{Decoder, OutputStream, Sink};
+use rodio::source::{SineWave, Source};
+use std::time::Duration;
 
 unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip8) {
     for i in 0..chip8_display::DISPLAY_HEIGHT {
@@ -42,13 +44,18 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    let rom = "./resources/KALEID";
+    let rom = "./resources/PONG2";
 
     load_program(device.borrow_mut(), rom);
 
     let mut window;
     let mut renderer;
     let mut event = SDL_Event::default();
+
+    let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+    let sink = Sink::try_new(&stream_handle).unwrap();
+    let source = SineWave::new(500.0).amplify(0.20);
+    sink.append(source);
 
     unsafe {
         assert_eq!(SDL_Init(SDL_INIT_EVERYTHING), 0);
@@ -110,6 +117,12 @@ fn main() {
         for b in 0..speed {
             step(device.borrow_mut());
             //print_registers(&device);
+        }
+
+        if device.st > 0 {
+            sink.play();
+        }else{
+            sink.pause();
         }
 
         device.key = KEYBOARD_SIZE + 1;

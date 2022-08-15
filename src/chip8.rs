@@ -109,6 +109,9 @@ pub fn step(device: &mut Chip8){
         if device.dt > 0{
             device.dt -= 1;
         }
+        if device.st > 0{
+            device.st -= 1;
+        }
     }
     device.cycle += 1;
 }
