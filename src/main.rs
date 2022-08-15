@@ -42,7 +42,7 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    load_program(device.borrow_mut(), "./resources/KALEID");
+    load_program(device.borrow_mut(), "./resources/FRAMEDMK2");
 
     let mut window;
     let mut renderer;
@@ -103,7 +103,7 @@ fn main() {
 
         for b in 0..14 {
             step(device.borrow_mut());
-            print_registers(&device);
+            //print_registers(&device);
         }
 
         device.key = KEYBOARD_SIZE + 1;

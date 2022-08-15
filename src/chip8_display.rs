@@ -21,16 +21,9 @@ pub fn xor_px_at(display: &mut Chip8Display, x:usize, y:usize) -> bool{
     if ry >= DISPLAY_HEIGHT{ ry%=DISPLAY_HEIGHT; }
     let byte = rx%8;
 
-    let mut xored = false;
-    if (display.display_data[ry][rx/8] & (0x80 >> byte)) > 0 {
-        xored = true;
-    }else{
-        xored = false;
-    }
-
+    let previous = display.display_data[ry][rx/8]&((0x80 >> byte) as u8);
     display.display_data[ry][rx/8] ^= (0x80 >> byte) as u8;
-
-    return xored;
+    return previous > 0 && display.display_data[ry][rx/8]&((0x80 >> byte) as u8) == 0;
 }
 
 /**
