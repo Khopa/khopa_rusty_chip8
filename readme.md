@@ -4,7 +4,7 @@ Rusty Chip 8
 What is this: 
 -------------
 
-This is a simple CHIP 8 Emulator written in Rust using SDL2
+This is a simple CHIP 8 Emulator written in Rust using SDL2 and rodio.
 
 Screenshoots with some popular chip8 roms :
 -------------------------------------------
