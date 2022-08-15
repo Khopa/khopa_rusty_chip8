@@ -8,5 +8,4 @@ edition = "2018"
 
 [dependencies]
 rand = "0.8.4"
-gl33 = "0.2.1"
 fermium = { version = "20014", features = ["experimental_fast_build"] }
