@@ -6,7 +6,7 @@ use crate::chip8_display::{DISPLAY_HEIGHT, DISPLAY_WIDTH, xor_px_at};
 use rand::Rng;
 use std::ops::{SubAssign, Add};
 use std::borrow::BorrowMut;
-use crate::debug_utils::print_display;
+use crate::debug_utils::{print_display, print_registers};
 
 #[derive(Debug)]
 #[derive(PartialEq, Eq)]
@@ -51,7 +51,7 @@ pub enum CH8_INSTRUCTION {
 
 pub fn get_and_print_instruction_type(ins: u16) -> CH8_INSTRUCTION {
     let a = get_instruction_type(ins);
-    // println!("{:#016b} {:#04x?} | {:.16?}", ins, ins, a);
+    println!("{:#016b} {:#04x?} | {:.16?}", ins, ins, a);
     return a;
 }
 
@@ -132,7 +132,9 @@ pub fn get_instruction_type(ins: u16) -> CH8_INSTRUCTION {
 
 pub fn exec(ins: u16, device: &mut Chip8){
     let itype = get_instruction_type(ins);
-    // print!("{:.16?} | {:#04x?} | {:#04x?} | {:#016b} | ", itype, device.pc, ins, ins);
+    //print_registers(device);
+    //println!("{:.16?} | {:#04?} | {:#04x?} | {:#016b} | {}", itype, device.pc, ins, ins, device.i);
+
     match itype {
         CH8_INSTRUCTION::SYS => {},
         CH8_INSTRUCTION::CLS => { cls(device, ins); },
@@ -591,8 +593,9 @@ Wait for a key press, store the value of the key in Vx.
 All execution stops until a key is pressed, then the value of that key is stored in Vx.
 */
 fn ldvxk(device: &mut Chip8, ins: u16) {
+    let x:usize = ((ins & 0x0F00) >> 8) as usize;
     if device.key < KEYBOARD_SIZE {
-        device.vn[0xF] = device.key as u8;
+        device.vn[x] = device.key as u8;
     }else{
         // force to loop on current ins
         device.pc -= 2;
@@ -638,7 +641,7 @@ fn addivx(device: &mut Chip8, ins: u16) {
     }else{
         device.vn[0xF] = 0;
     }
-    device.i = device.i + (device.vn[x] as u16);
+    device.i = device.i.wrapping_add(device.vn[x] as u16);
     device.pc += 2;
 }
 

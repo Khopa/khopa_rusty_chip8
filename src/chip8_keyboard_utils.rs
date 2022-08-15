@@ -43,10 +43,6 @@ pub fn on_keyboard_event(device: &mut Chip8, keycode: SDL_Scancode, down: bool) 
             device.keyboard[0x9] = down;
             if down { device.key = 0x9; }
         }
-        SDL_SCANCODE_9 => {
-            device.keyboard[0x9] = down;
-            if down { device.key = 0x9; }
-        }
         SDL_SCANCODE_A => {
             device.keyboard[0xA] = down;
             if down { device.key = 0xA; }

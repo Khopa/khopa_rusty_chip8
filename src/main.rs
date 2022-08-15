@@ -42,7 +42,7 @@ unsafe fn render_chip8_display(renderer: *mut SDL_Renderer, device: &chip8::Chip
 
 fn main() {
     let mut device = chip8::build_chip8();
-    let rom = "./resources/FRAMEDMK2";
+    let rom = "./resources/KALEID";
 
     load_program(device.borrow_mut(), rom);
 

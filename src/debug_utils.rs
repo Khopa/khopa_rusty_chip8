@@ -11,10 +11,9 @@ use crate::chip8::KEYBOARD_SIZE;
  */
 pub fn print_registers(device: &chip8::Chip8) {
     for n in 0..chip8::REGISTER_COUNT {
-        print!("0x{:02x?} | ", device.vn[n]);
+        print!("{:02?}|", device.vn[n]);
     }
-    print!("| i = {}", device.i);
-    println!();
+    print!("| ");
 }
 
 /**
