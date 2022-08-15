@@ -6,6 +6,13 @@ What is this:
 
 This is a simple CHIP 8 Emulator written in Rust using SDL2 and rodio.
 
+How to use: 
+-----------
+
+```cargo run```
+
+* Change the rom to load in main.rs (to be improved)
+
 Screenshoots with some popular chip8 roms :
 -------------------------------------------
 
